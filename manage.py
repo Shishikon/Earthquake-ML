@@ -28,21 +28,22 @@ for i in copy.columns:
 
 
 
-
-
 # visualizer
-plot_mag = plot_earthquake_magnitudes
-country_mags = mag_by_country
+mag_dist = plot_magnitude_distribution
+corr_hm = plot_corr_heatmap
+mag_cnt = plot_mag_by_country
 
 
-
-print(copy.head(10).to_string())
+# print(copy.head(1).to_string())
 
 
 
 
 # Working with columns safe test configuration reference
 safe_test_columns = ['magType', 'nst', 'gap', 'dmin', 'rms', 'horizontalError', 'depthError', 'magError', 'magNst']
+
+
+
 
 
 

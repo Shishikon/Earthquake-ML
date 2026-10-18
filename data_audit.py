@@ -3,7 +3,7 @@ import pandas as pd
 PLACEHOLDERS = {"", "na", "n/a", "nan", "none", "null", "unknown", "?", "-", "--", "missing"}
 
 
-def audit_summary(df: pd.DataFrame, print_summary: bool=False) -> pd.DataFrame:
+def audit_summary(df: pd.DataFrame) -> pd.DataFrame:
     """Combines table-level summary metrics and column-level audit into one clean DataFrame."""
     rows = []
     n_rows = len(df)
@@ -47,12 +47,4 @@ def audit_summary(df: pd.DataFrame, print_summary: bool=False) -> pd.DataFrame:
         })
 
     audit_df = pd.DataFrame(rows).set_index("column")
-    if print_summary:
-
-        print(f"=== Dataset Summary ===")
-        print(f"Total Rows: {n_rows}")
-        print(f"Total Columns: {df.shape[1]}")
-        print(f"Total Duplicate Rows: {total_duplicates}")
-        print(f"Rows with Missing Data: {int(df.isna().any(axis=1).sum())}\n")
-
     return audit_df

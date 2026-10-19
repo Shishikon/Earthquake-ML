@@ -223,7 +223,32 @@ def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
 
 
 
+def plot_earthquake_map(df: pd.DataFrame):
+    lat_col = "latitude"
+    lon_col = "longitude"
+    mag_col = "mag"
 
+    plt.figure(figsize=(14, 7))
+    sns.set_theme(style="whitegrid")
+
+    scatter = plt.scatter(
+        x=df[lon_col],
+        y=df[lat_col],
+        c=df[mag_col],
+        # cmap="YlOrRd",
+        alpha=0.6,
+        s=df[mag_col] * 2.5,
+        edgecolors="none"
+    )
+
+    cbar = plt.colorbar(scatter)
+    cbar.set_label("Magnitude (mag)", fontsize=11)
+
+    plt.title("Global Earthquake Epicenters (Latitude vs. Longitude)", fontsize=13, fontweight="bold")
+    plt.xlabel("Longitude", fontsize=11)
+    plt.ylabel("Latitude", fontsize=11)
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":

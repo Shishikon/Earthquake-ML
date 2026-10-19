@@ -64,13 +64,10 @@ def plot_corr_heatmap(df: pd.DataFrame, method: str = "spearman", complete_only:
 
     return corr_matrix
 
-
-def plot_mag_by_country(
-        df: pd.DataFrame,
-        country_col: str = "country",
+# mag by country
+def plot_mag_by_country(df: pd.DataFrame, country_col: str = "country",
         mag_col: str = "mag",
-        min_events: int = 1,
-) -> pd.DataFrame:
+        min_events: int = 1) -> pd.DataFrame:
 
     summary = (
         df.groupby(country_col)[mag_col]
@@ -100,6 +97,112 @@ def plot_mag_by_country(
     plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.show()
+
+# events by year
+def plot_events_per_year(df: pd.DataFrame):
+
+    date_col = "date"
+    start_year = 1928
+    end_year = 2026
+
+    temp_df = df.copy()
+    # Extract the year from your date column safely
+    temp_df["year"] = pd.to_datetime(temp_df[date_col], errors="coerce").dt.year
+
+    # Count occurrences per year and sort by year
+    year_counts = temp_df["year"].value_counts().sort_index()
+
+    # Reindex to force the full timeline range, filling missing years with 0
+    full_range = range(start_year, end_year + 1)
+    year_counts = year_counts.reindex(full_range, fill_value=0)
+
+    plt.figure(figsize=(12, 6))
+    sns.set_theme(style="whitegrid")
+
+    # Create the bar plot
+    sns.barplot(
+        x=list(year_counts.index),
+        y=year_counts.values,
+        palette='dark:steelblue',
+        hue=list(year_counts.index),
+        legend=False
+    )
+
+    # Thin out X-axis ticks to show every 5 years so it isn't crowded
+    tick_positions = np.arange(0, len(full_range), 5)
+    tick_labels = list(full_range)[::5]
+    plt.xticks(ticks=tick_positions, labels=tick_labels, rotation=45)
+
+    plt.title(f"Earthquake Frequency Per Year ({start_year}–{end_year})", fontsize=13, fontweight="bold")
+    plt.xlabel("Year", fontsize=11)
+    plt.ylabel("Number of Events", fontsize=11)
+    plt.tight_layout()
+    plt.show()
+
+
+# mean mag by countries for a decades
+def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
+    country_col = "country"
+    mag_col = "mag"
+    date_col = "date"
+    top_n = 10
+
+
+    temp_df = df.copy()
+
+    temp_df["year"] = pd.to_datetime(temp_df[date_col], errors="coerce").dt.year
+    temp_df = temp_df.dropna(subset=["year", mag_col, country_col])
+    temp_df["decade"] = (temp_df["year"] // 10 * 10).astype(str) + "s"
+
+    top_countries = temp_df[country_col].value_counts().head(top_n).index
+    filtered_df = temp_df[temp_df[country_col].isin(top_countries)]
+
+    pivot_data = filtered_df.pivot_table(
+        index=country_col,
+        columns="decade",
+        values=mag_col,
+        aggfunc="mean"
+    )
+
+    plt.figure(figsize=(12, 7))
+    sns.set_theme(style="whitegrid")
+
+    sns.heatmap(
+        pivot_data,
+        annot=True,
+        fmt=".2f",
+        cmap="YlOrRd",
+        linewidths=0.5,
+        cbar_kws={'label': 'Mean Magnitude'}
+    )
+
+    plt.title(f"Mean Earthquake Magnitude by Country Across Decades (Top {top_n} Countries)", fontsize=13,
+              fontweight="bold")
+    plt.xlabel("Decade", fontsize=11)
+    plt.ylabel("Country", fontsize=11)
+    plt.xticks(rotation=45)
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

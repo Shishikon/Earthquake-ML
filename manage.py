@@ -32,7 +32,8 @@ for i in copy.columns:
 mag_dist = plot_magnitude_distribution
 corr_hm = plot_corr_heatmap
 mag_cnt = plot_mag_by_country
-
+event_by_year = plot_events_per_year
+mag_by_decade = plot_mean_magnitude_decade_heatmap
 
 # print(copy.head(1).to_string())
 

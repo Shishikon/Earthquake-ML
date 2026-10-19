@@ -25,8 +25,43 @@ def plot_magnitude_distribution(df: pd.DataFrame):
     plt.show()
 
 
+# depth distribution
+def plot_depth_distribution(df: pd.DataFrame):
+    plt.figure(figsize=(12, 6))
+    sns.set_theme(style="whitegrid")
+
+    depth_order = [
+        "very_shallow",
+        "shallow",
+        "moderately_shallow",
+        "intermediate_1",
+        "intermediate_2",
+        "intermediate_3"
+    ]
+    existing_order = [cat for cat in depth_order if cat in df['depth_class'].unique()]
+    counter = df['depth_class'].value_counts()
+    labels = [f"{cat}\n(n={counter[cat]})" for cat in existing_order]
+    sns.countplot(
+        data=df,
+        x="depth_class",
+        order=existing_order,
+        palette="viridis",
+        hue="depth_class",
+        legend=False
+    )
+
+    plt.title("Distribution of Earthquake Depth Classes", fontsize=13, fontweight="bold")
+    plt.xlabel("Depth Class", fontsize=11)
+    plt.ylabel("Frequency (Count)", fontsize=11)
+    plt.xticks(ticks=range(len(existing_order)), labels=labels, ha="right")
+    plt.tight_layout()
+    plt.show()
+
+
 # Heatmap
-def plot_corr_heatmap(df: pd.DataFrame, method: str = "spearman", complete_only: bool = False) -> pd.DataFrame:
+def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
+    method = "spearman"
+    complete_only = False
 
     cols = ["mag", "latitude", "longitude",
             "nst", "gap", "dmin", "rms", "horizontalError",
@@ -64,11 +99,12 @@ def plot_corr_heatmap(df: pd.DataFrame, method: str = "spearman", complete_only:
 
     return corr_matrix
 
-# mag by country
-def plot_mag_by_country(df: pd.DataFrame, country_col: str = "country",
-        mag_col: str = "mag",
-        min_events: int = 1) -> pd.DataFrame:
 
+# mag by country
+def plot_mag_by_country(df: pd.DataFrame):
+    country_col = "country"
+    mag_col = "mag"
+    min_events = 1
     summary = (
         df.groupby(country_col)[mag_col]
         .agg(count="count")
@@ -97,6 +133,7 @@ def plot_mag_by_country(df: pd.DataFrame, country_col: str = "country",
     plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.show()
+
 
 # events by year
 def plot_events_per_year(df: pd.DataFrame):
@@ -128,10 +165,9 @@ def plot_events_per_year(df: pd.DataFrame):
         legend=False
     )
 
-    # Thin out X-axis ticks to show every 5 years so it isn't crowded
     tick_positions = np.arange(0, len(full_range), 5)
     tick_labels = list(full_range)[::5]
-    plt.xticks(ticks=tick_positions, labels=tick_labels, rotation=45)
+    plt.xticks(ticks=tick_positions, rotation=45)
 
     plt.title(f"Earthquake Frequency Per Year ({start_year}–{end_year})", fontsize=13, fontweight="bold")
     plt.xlabel("Year", fontsize=11)
@@ -184,22 +220,6 @@ def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
     plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

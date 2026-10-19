@@ -10,7 +10,7 @@ config.py
  *.txt
 
 .ipynb_checkpoints/
-
+*.ipynb
 
 .venv
 venv

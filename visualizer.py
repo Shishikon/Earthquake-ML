@@ -251,7 +251,6 @@ def plot_earthquake_map(df: pd.DataFrame):
     plt.show()
 
 
-
 if __name__ == "__main__":
     print(f"=====Function 1=====\n"
           f"plot_magnitude_distribution: "

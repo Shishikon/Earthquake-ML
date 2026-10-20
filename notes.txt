@@ -1,6 +1,2 @@
-To drop:
-1) time
-2) Status
-3) type
-4) depth
+mag column passed shapiro wilk test and it follows normal distribution
 

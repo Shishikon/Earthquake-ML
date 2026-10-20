@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-
+import stats
+from scipy import stats
 
 
 # ==========Univariate START==========
@@ -303,7 +304,7 @@ def plot_desc_table(df) -> pd.DataFrame:
     return dt.round(2)
 
 
-def plot_missing_percent(df):
+def plot_missing_percent(df: pd.DataFrame):
     plt.figure(figsize=(10, 6))
     pct = df.isna().mean().mul(100).sort_values(ascending=False)
     pct = pct[pct > 0]
@@ -315,6 +316,50 @@ def plot_missing_percent(df):
     plt.show()
 
 
+def plot_pearson_spearman(df: pd.DataFrame):
+    x_col = 'mag'
+    y_col = 'nst'
+
+    plt.figure(figsize=(10, 6))
+    d = df[[x_col, y_col]].dropna()
+
+    # Calculate both Spearman and Pearson
+    spearman_rho, p_val_s = stats.spearmanr(d[x_col], d[y_col])
+    pearson_r, p_val_p = stats.pearsonr(d[x_col], d[y_col])
+
+    sns.scatterplot(data=d, x=x_col, y=y_col, alpha=0.4)
+
+    title_text = (
+        f"{y_col} vs {x_col} (n = {len(d)})\n"
+        f"Spearman rho = {spearman_rho:.2f} | Pearson r = {pearson_r:.2f}"
+    )
+    plt.title(title_text, fontsize=12, fontweight='bold')
+    plt.show()
+
+
+
+
+def plot_depth_hist(df):
+    plt.figure(figsize=(10, 6))
+    sns.histplot(data=df, x="depth", bins=40)
+    plt.xlabel("Depth (km)")
+    plt.title("Depth Distribution")
+    plt.show()
+
+
+
+
+def plot_shapiro_test(df: pd.DataFrame, col: str):
+    """Shapiro-Wilk test"""
+    data = df[col].dropna()
+    stat, p = stats.shapiro(data)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    sns.histplot(data, kde=True, stat="density", ax=ax[0])
+    ax[0].set_title(f"{col} histogram ({stat.round(7)})")
+    stats.probplot(data, dist="norm", plot=ax[1])
+    ax[1].set_title(f"{col} Q-Q plot (Shapiro p = {p:.2e})")
+    plt.tight_layout()
+    plt.show()
 # ==========TESTING END==========
 
 
@@ -352,7 +397,15 @@ if __name__ == "__main__":
           f"plot_desc_table: "
           f"Computes a comprehensive descriptive statistics table for numeric columns, \n"
           f"displays a straightforward visualization of missing % and skewness, \n"
-          f"and returns the DataFrame.\n")
+          f"and returns the DataFrame.\n"
+
+
+          f"\n=====Function 5=====\n"
+          f"plot_pearson_spearman: "
+          f"A strong positive correlation exists between earthquake magnitude and the, \n"
+          f"number of reporting stations (Pearson r=0.72, Spearman ρ=0.75, n=409), \n"
+          f"demonstrating that larger seismic events are successfully detected by \n"
+          f"broader monitoring networks.\n")
 
 
 

@@ -4,6 +4,10 @@ from column_cleaner import EarthquakeDataCleaner
 from data_audit import audit_summary
 from visualizer import *
 from functools import partial
+from scipy import stats
+
+
+
 
 # Load the dataset
 LOCAL_FILE = Path("Files/query.csv")
@@ -45,12 +49,11 @@ mean_magnitude_decade_heatmap = plot_mean_magnitude_decade_heatmap
 
 
 # testing
-desc_table = plot_desc_table(copy)
-
-
-plot_missing_percent
-
-
+desc_table = plot_desc_table
+missing_percent = plot_missing_percent
+pearson_spearman = plot_pearson_spearman
+depth_hist = plot_depth_hist # give raw to depth_hist
+shapiro_test = plot_shapiro_test # give copy and col name
 
 
 

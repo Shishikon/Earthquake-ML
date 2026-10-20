@@ -28,17 +28,33 @@ for i in copy.columns:
 
 
 
-# visualizer
-mag_dist = plot_magnitude_distribution
-depth_dist = plot_depth_distribution
-corr_hm = plot_corr_heatmap
-mag_cnt = plot_mag_by_country
-event_by_year = plot_events_per_year
-mag_by_decade = plot_mean_magnitude_decade_heatmap
-lat_long = plot_earthquake_map
+# ======visualizer======
+
+# Univariate
+magnitude_distribution = plot_magnitude_distribution
+depth_distribution = plot_depth_distribution
+mag_by_country = plot_mag_by_country
+events_per_year = plot_events_per_year
+
+# Bivariate
+earthquake_map = plot_earthquake_map
+
+# Multivariate
+corr_heatmap = plot_corr_heatmap
+mean_magnitude_decade_heatmap = plot_mean_magnitude_decade_heatmap
 
 
-# print(copy.head(1).to_string())
+# testing
+desc_table = plot_desc_table(copy)
+
+
+plot_missing_percent
+
+
+
+
+
+# print(copy.head(10).to_string())
 
 
 

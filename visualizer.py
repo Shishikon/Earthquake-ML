@@ -4,12 +4,16 @@ import pandas as pd
 import numpy as np
 
 
+
+# ==========Univariate START==========
+
 # mag distribution histogram
 def plot_magnitude_distribution(df: pd.DataFrame):
+    temp_df = df.copy()
     plt.figure(figsize=(10, 5))
     sns.set_theme(style="whitegrid")
 
-    mag_data = df["mag"].dropna()
+    mag_data = temp_df["mag"].dropna()
 
     # Histogram + KDE (probability density)
     sns.histplot(mag_data, kde=True, color="crimson", bins=30)
@@ -24,9 +28,9 @@ def plot_magnitude_distribution(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
-
 # depth distribution
 def plot_depth_distribution(df: pd.DataFrame):
+    temp_df = df.copy()
     plt.figure(figsize=(12, 6))
     sns.set_theme(style="whitegrid")
 
@@ -38,11 +42,11 @@ def plot_depth_distribution(df: pd.DataFrame):
         "intermediate_2",
         "intermediate_3"
     ]
-    existing_order = [cat for cat in depth_order if cat in df['depth_class'].unique()]
-    counter = df['depth_class'].value_counts()
+    existing_order = [cat for cat in depth_order if cat in temp_df['depth_class'].unique()]
+    counter = temp_df['depth_class'].value_counts()
     labels = [f"{cat}\n(n={counter[cat]})" for cat in existing_order]
     sns.countplot(
-        data=df,
+        data=temp_df,
         x="depth_class",
         order=existing_order,
         palette="viridis",
@@ -57,9 +61,122 @@ def plot_depth_distribution(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
+# mag by country
+def plot_mag_by_country(df: pd.DataFrame):
+    temp_df = df.copy()
+    country_col = "country"
+    mag_col = "mag"
+    min_events = 1
+    summary = (
+        temp_df.groupby(country_col)[mag_col]
+        .agg(count="count")
+        .round(2)
+    )
+    summary = summary[summary["count"] >= min_events]
 
+    order = summary.index.tolist()
+    data = temp_df[temp_df[country_col].isin(order)]
+    labels = [f"{c}\n(n={summary.loc[c, 'count']})" for c in order]
+
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(11, 6))
+    sns.boxplot(data=data, x=country_col, y=mag_col, order=order,
+                hue=country_col, legend=False,
+                showfliers=True, width=0.6)
+
+    min_val = np.floor(data[mag_col].min())
+    max_val = np.ceil(data[mag_col].max())
+
+    plt.xticks(range(len(order)), labels)
+    plt.yticks(np.arange(min_val, max_val + 0.5, 0.5))
+
+    plt.xlabel("Country")
+    plt.ylabel("Magnitude (mag)")
+    plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    plt.show()
+
+# events by year
+def plot_events_per_year(df: pd.DataFrame):
+    temp_df = df.copy()
+    date_col = "date"
+    start_year = 1928
+    end_year = 2026
+
+
+    # Extract the year from your date column safely
+    temp_df["year"] = pd.to_datetime(temp_df[date_col], errors="coerce").dt.year
+
+    # Count occurrences per year and sort by year
+    year_counts = temp_df["year"].value_counts().sort_index()
+
+    # Reindex to force the full timeline range, filling missing years with 0
+    full_range = range(start_year, end_year + 1)
+    year_counts = year_counts.reindex(full_range, fill_value=0)
+
+    plt.figure(figsize=(12, 6))
+    sns.set_theme(style="whitegrid")
+
+    # Create the bar plot
+    sns.barplot(
+        x=list(year_counts.index),
+        y=year_counts.values,
+        palette='dark:steelblue',
+        hue=list(year_counts.index),
+        legend=False
+    )
+
+    tick_positions = np.arange(0, len(full_range), 5)
+    tick_labels = list(full_range)[::5]
+    plt.xticks(ticks=tick_positions, rotation=45)
+
+    plt.title(f"Earthquake Frequency Per Year ({start_year}–{end_year})", fontsize=13, fontweight="bold")
+    plt.xlabel("Year", fontsize=11)
+    plt.ylabel("Number of Events", fontsize=11)
+    plt.tight_layout()
+    plt.show()
+# ==========Univariate END==========
+
+
+
+
+# ==========Bivariate START==========
+def plot_earthquake_map(df: pd.DataFrame):
+    temp_df = df.copy()
+    lat_col = "latitude"
+    lon_col = "longitude"
+    mag_col = "mag"
+
+    plt.figure(figsize=(14, 7))
+    sns.set_theme(style="whitegrid")
+
+    scatter = plt.scatter(
+        x=temp_df[lon_col],
+        y=temp_df[lat_col],
+        c=temp_df[mag_col],
+        # cmap="YlOrRd",
+        alpha=0.6,
+        s=temp_df[mag_col] * 2.5,
+        edgecolors="none"
+    )
+
+    cbar = plt.colorbar(scatter)
+    cbar.set_label("Magnitude (mag)", fontsize=11)
+
+    plt.title("Global Earthquake Epicenters (Latitude vs. Longitude)", fontsize=13, fontweight="bold")
+    plt.xlabel("Longitude", fontsize=11)
+    plt.ylabel("Latitude", fontsize=11)
+    plt.tight_layout()
+    plt.show()
+# ==========Bivariate END==========
+
+
+
+
+# ==========Multivariate START==========
 # Heatmap
 def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
+    temp_df = df.copy()
     method = "spearman"
     complete_only = False
 
@@ -67,7 +184,7 @@ def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
             "nst", "gap", "dmin", "rms", "horizontalError",
             "depthError", "magError", "magNst"]
 
-    data = df[cols]
+    data = temp_df[cols]
     if complete_only:
         data = data.dropna()
 
@@ -100,91 +217,13 @@ def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
     return corr_matrix
 
 
-# mag by country
-def plot_mag_by_country(df: pd.DataFrame):
-    country_col = "country"
-    mag_col = "mag"
-    min_events = 1
-    summary = (
-        df.groupby(country_col)[mag_col]
-        .agg(count="count")
-        .round(2)
-    )
-    summary = summary[summary["count"] >= min_events]
-
-    order = summary.index.tolist()
-    data = df[df[country_col].isin(order)]
-    labels = [f"{c}\n(n={summary.loc[c, 'count']})" for c in order]
-
-    sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(11, 6))
-    sns.boxplot(data=data, x=country_col, y=mag_col, order=order,
-                hue=country_col, legend=False,
-                showfliers=True, width=0.6)
-
-    min_val = np.floor(data[mag_col].min())
-    max_val = np.ceil(data[mag_col].max())
-
-    plt.xticks(range(len(order)), labels)
-    plt.yticks(np.arange(min_val, max_val + 0.5, 0.5))
-
-    plt.xlabel("Country")
-    plt.ylabel("Magnitude (mag)")
-    plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
-    plt.tight_layout()
-    plt.show()
-
-
-# events by year
-def plot_events_per_year(df: pd.DataFrame):
-
-    date_col = "date"
-    start_year = 1928
-    end_year = 2026
-
-    temp_df = df.copy()
-    # Extract the year from your date column safely
-    temp_df["year"] = pd.to_datetime(temp_df[date_col], errors="coerce").dt.year
-
-    # Count occurrences per year and sort by year
-    year_counts = temp_df["year"].value_counts().sort_index()
-
-    # Reindex to force the full timeline range, filling missing years with 0
-    full_range = range(start_year, end_year + 1)
-    year_counts = year_counts.reindex(full_range, fill_value=0)
-
-    plt.figure(figsize=(12, 6))
-    sns.set_theme(style="whitegrid")
-
-    # Create the bar plot
-    sns.barplot(
-        x=list(year_counts.index),
-        y=year_counts.values,
-        palette='dark:steelblue',
-        hue=list(year_counts.index),
-        legend=False
-    )
-
-    tick_positions = np.arange(0, len(full_range), 5)
-    tick_labels = list(full_range)[::5]
-    plt.xticks(ticks=tick_positions, rotation=45)
-
-    plt.title(f"Earthquake Frequency Per Year ({start_year}–{end_year})", fontsize=13, fontweight="bold")
-    plt.xlabel("Year", fontsize=11)
-    plt.ylabel("Number of Events", fontsize=11)
-    plt.tight_layout()
-    plt.show()
-
-
 # mean mag by countries for a decades
 def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
+    temp_df = df.copy()
     country_col = "country"
     mag_col = "mag"
     date_col = "date"
     top_n = 10
-
-
-    temp_df = df.copy()
 
     temp_df["year"] = pd.to_datetime(temp_df[date_col], errors="coerce").dt.year
     temp_df = temp_df.dropna(subset=["year", mag_col, country_col])
@@ -220,35 +259,74 @@ def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
     plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
+# ==========Multivariate END==========
 
 
 
-def plot_earthquake_map(df: pd.DataFrame):
-    lat_col = "latitude"
-    lon_col = "longitude"
-    mag_col = "mag"
 
-    plt.figure(figsize=(14, 7))
-    sns.set_theme(style="whitegrid")
+# ==========TESTING START==========
 
-    scatter = plt.scatter(
-        x=df[lon_col],
-        y=df[lat_col],
-        c=df[mag_col],
-        # cmap="YlOrRd",
-        alpha=0.6,
-        s=df[mag_col] * 2.5,
-        edgecolors="none"
+# descriptive analysis + skew, kurt, missingness
+def plot_desc_table(df) -> pd.DataFrame:
+    temp_df = df.copy()
+    cols = temp_df.select_dtypes(include="number").columns
+
+    dt = temp_df[cols].describe().T
+
+    dt['skew'] = temp_df[cols].skew()
+    dt['kurtosis'] = temp_df[cols].kurtosis()
+    dt['missing_%'] = temp_df[cols].isna().mean() * 100
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, max(4, len(cols) * 0.35)))
+
+    sns.barplot(
+        x=dt['missing_%'],
+        y=dt.index,
+        ax=axes[0],
+        color='salmon'
     )
+    axes[0].set_title('Missing Values (%)', fontsize=12, fontweight='bold')
+    axes[0].set_xlabel('Percentage (%)')
+    axes[0].set_ylabel('')
+    axes[0].set_xlim(0, 100)
 
-    cbar = plt.colorbar(scatter)
-    cbar.set_label("Magnitude (mag)", fontsize=11)
+    sns.barplot(x=dt['skew'], y=dt.index, ax=axes[1], color='skyblue')
+    axes[1].set_title('Feature Skewness', fontsize=12, fontweight='bold')
+    axes[1].set_xlabel('Skew Value')
+    axes[1].set_ylabel('')
+    axes[1].axvline(0, color='red', linestyle='--', alpha=0.7, label='Symmetric (0)')
+    axes[1].legend(loc='lower right')
 
-    plt.title("Global Earthquake Epicenters (Latitude vs. Longitude)", fontsize=13, fontweight="bold")
-    plt.xlabel("Longitude", fontsize=11)
-    plt.ylabel("Latitude", fontsize=11)
     plt.tight_layout()
     plt.show()
+
+    return dt.round(2)
+
+
+def plot_missing_percent(df):
+    plt.figure(figsize=(10, 6))
+    pct = df.isna().mean().mul(100).sort_values(ascending=False)
+    pct = pct[pct > 0]
+    sns.barplot(x=pct.values, y=pct.index)
+    plt.xlabel("% missing")
+    plt.ylabel("Columns")
+    plt.title("Missing Values by Column")
+    plt.tight_layout()
+    plt.show()
+
+
+# ==========TESTING END==========
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -268,7 +346,13 @@ if __name__ == "__main__":
           f"plot_mag_by_country: "
           f"The full statistical distribution for each country, including the median \n"
           f"(middle line), the interquartile range (the box), and any extreme outliers \n"
-          f"(dots outside the whiskers).\n")
+          f"(dots outside the whiskers).\n"
+
+          f"\n=====Function 4=====\n"
+          f"plot_desc_table: "
+          f"Computes a comprehensive descriptive statistics table for numeric columns, \n"
+          f"displays a straightforward visualization of missing % and skewness, \n"
+          f"and returns the DataFrame.\n")
 
 
 

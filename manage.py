@@ -54,10 +54,15 @@ missing_percent = plot_missing_percent
 pearson_spearman = plot_pearson_spearman
 depth_hist = plot_depth_hist # give raw to depth_hist
 shapiro_test = plot_shapiro_test # give copy and col name
+gutenberg_richter = plot_gutenberg_richter
+poisson = plot_poisson
+poisson_by_country = plot_poisson_by_country
+era_mannwhitney = plot_era_mannwhitney
+country_kruskal = plot_country_kruskal
+quarterly_series = plot_quarterly_series
 
 
-
-# print(copy.head(10).to_string())
+# print(copy.head(1).to_string())
 
 
 

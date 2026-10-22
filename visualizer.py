@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-import stats
 from scipy import stats
 
 
-# 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽 Univariate START 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽
+# ==============================================================================
+# CATEGORY 1: Basic Data Summary & Exploratory Analysis
+# Level of Difficulty: Low | Level of Importance: High (Foundation & Quality Control)
+# ==============================================================================
 
 # mag distribution histogram
 def plot_magnitude_distribution(df: pd.DataFrame):
@@ -62,41 +64,6 @@ def plot_depth_distribution(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
-# mag by country
-def plot_mag_by_country(df: pd.DataFrame):
-    temp_df = df.copy()
-    country_col = "country"
-    mag_col = "mag"
-    min_events = 1
-    summary = (
-        temp_df.groupby(country_col)[mag_col]
-        .agg(count="count")
-        .round(2)
-    )
-    summary = summary[summary["count"] >= min_events]
-
-    order = summary.index.tolist()
-    data = temp_df[temp_df[country_col].isin(order)]
-    labels = [f"{c}\n(n={summary.loc[c, 'count']})" for c in order]
-
-    sns.set_theme(style="whitegrid")
-    plt.figure(figsize=(11, 6))
-    sns.boxplot(data=data, x=country_col, y=mag_col, order=order,
-                hue=country_col, legend=False,
-                showfliers=True, width=0.6)
-
-    min_val = np.floor(data[mag_col].min())
-    max_val = np.ceil(data[mag_col].max())
-
-    plt.xticks(range(len(order)), labels)
-    plt.yticks(np.arange(min_val, max_val + 0.5, 0.5))
-
-    plt.xlabel("Country")
-    plt.ylabel("Magnitude (mag)")
-    plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
-    plt.tight_layout()
-    plt.show()
-
 # events by year
 def plot_events_per_year(df: pd.DataFrame):
     temp_df = df.copy()
@@ -138,7 +105,7 @@ def plot_events_per_year(df: pd.DataFrame):
     plt.show()
 
 # descriptive analysis + skew, kurt, missingness
-def plot_desc_table(df) -> pd.DataFrame:
+def plot_desc_table(df: pd.DataFrame) -> pd.DataFrame:
     temp_df = df.copy()
     cols = temp_df.select_dtypes(include="number").columns
 
@@ -186,90 +153,54 @@ def plot_missing_percent(df: pd.DataFrame):
     plt.show()
 
 # depth distribution
-def plot_depth_hist(df):
+def plot_depth_hist(df: pd.DataFrame):
+    temp_df = df.copy()
     plt.figure(figsize=(10, 6))
-    sns.histplot(data=df, x="depth", bins=40)
+    sns.histplot(data=temp_df, x="depth", bins=40)
     plt.xlabel("Depth (km)")
     plt.title("Depth Distribution")
     plt.show()
 
 
-# Shapiro-Wilk test
-def plot_shapiro_test(df: pd.DataFrame, col: str):
-    data = df[col].dropna()
-    stat, p = stats.shapiro(data)
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-    sns.histplot(data, kde=True, stat="density", ax=ax[0])
-    ax[0].set_title(f"{col} histogram ({stat.round(7)})")
-    stats.probplot(data, dist="norm", plot=ax[1])
-    ax[1].set_title(f"{col} Q-Q plot (Shapiro p = {p:.2e})")
+# ==============================================================================
+# CATEGORY 2: Bivariate & Spatial Explorations
+# Level of Difficulty: Medium | Level of Importance: High (Relationship Discovery)
+# ==============================================================================
+
+# mag by country
+def plot_mag_by_country(df: pd.DataFrame):
+    temp_df = df.copy()
+    country_col = "country"
+    mag_col = "mag"
+    min_events = 1
+    summary = (
+        temp_df.groupby(country_col)[mag_col]
+        .agg(count="count")
+        .round(2)
+    )
+    summary = summary[summary["count"] >= min_events]
+
+    order = summary.index.tolist()
+    data = temp_df[temp_df[country_col].isin(order)]
+    labels = [f"{c}\n(n={summary.loc[c, 'count']})" for c in order]
+
+    sns.set_theme(style="whitegrid")
+    plt.figure(figsize=(11, 6))
+    sns.boxplot(data=data, x=country_col, y=mag_col, order=order,
+                hue=country_col, legend=False,
+                showfliers=True, width=0.6)
+
+    min_val = np.floor(data[mag_col].min())
+    max_val = np.ceil(data[mag_col].max())
+
+    plt.xticks(range(len(order)), labels)
+    plt.yticks(np.arange(min_val, max_val + 0.5, 0.5))
+
+    plt.xlabel("Country")
+    plt.ylabel("Magnitude (mag)")
+    plt.title("Earthquake Magnitude by Country", fontsize=13, fontweight="bold")
     plt.tight_layout()
     plt.show()
-
-
-# Gutenberg richter
-def plot_gutenberg_richter(df: pd.DataFrame):
-    temp_df = df.copy()
-    mc = 4.0
-    min_year = 1990
-    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
-    temp_df = temp_df.dropna(subset=['year'])
-    temp_df['year'] = temp_df['year'].astype(int)
-
-    plt.figure(figsize=(10, 6))
-
-    d = temp_df[(temp_df['year'] >= min_year) & (temp_df['mag'] >= mc)]
-    mags = np.sort(d['mag'].unique())
-
-    counts = np.array([(d['mag'] >= m).sum() for m in mags])
-
-    slope, intercept = np.polyfit(mags, np.log10(counts), 1)
-
-    sns.scatterplot(x=mags, y=counts, label="Observed")
-
-    plt.plot(mags, 10 ** (intercept + slope * mags), color="red",
-             label=f"Fit: b = {-slope:.2f}")
-
-    plt.yscale("log")
-    plt.xlabel("Magnitude")
-    plt.ylabel("Events with magnitude >= m")
-    plt.title("Gutenberg-Richter Relationship")
-    plt.legend()
-    plt.show()
-
-
-# Poisson
-def plot_poisson(df):
-    temp_df = df.copy()
-    min_year= 1990
-    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
-    temp_df = temp_df.dropna(subset=['year'])
-    temp_df['year'] = temp_df['year'].astype(int)
-
-
-    """Observed yearly counts vs a Poisson distribution with the same mean."""
-    plt.figure(figsize=(10, 6))
-    years = range(min_year, temp_df["year"].max())
-    counts = temp_df.groupby("year").size().reindex(years, fill_value=0)
-    mean, var = counts.mean(), counts.var()
-    k = np.arange(counts.min(), counts.max() + 1)
-    expected = stats.poisson.pmf(k, mean)
-    sns.histplot(counts, discrete=True, stat="probability", label="Observed")
-    plt.plot(k, expected, "ro-", label=f"Poisson (lambda = {mean:.1f})")
-    plt.title(f"Events per Year: variance/mean = {var / mean:.1f}")
-    plt.xlabel("Events in a year")
-    plt.legend()
-    plt.show()
-
-
-
-# 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼 Univariate END 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼
-
-
-
-
-
-# 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽 Bivariate START 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽
 
 # earthquake using lat and long
 def plot_earthquake_map(df: pd.DataFrame):
@@ -300,7 +231,6 @@ def plot_earthquake_map(df: pd.DataFrame):
     plt.tight_layout()
     plt.show()
 
-
 # Pearson Spears table
 def plot_pearson_spearman(df: pd.DataFrame):
     x_col = 'mag'
@@ -323,87 +253,11 @@ def plot_pearson_spearman(df: pd.DataFrame):
     plt.show()
 
 
-# poisson by country
-def plot_poisson_by_country(df):
-    country_name = "Uzbekistan"
-    min_year = 1990
-    temp_df = df.copy()
-    temp_df = temp_df[temp_df['country'].str.lower() == country_name.lower()]
+# ==============================================================================
+# CATEGORY 3: Advanced Multivariate & Temporal Analysis
+# Level of Difficulty: High | Level of Importance: High (Multi-feature & Trend Insights)
+# ==============================================================================
 
-    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
-    temp_df = temp_df.dropna(subset=['year'])
-    temp_df['year'] = temp_df['year'].astype(int)
-
-    plt.figure(figsize=(10, 6))
-    years = range(min_year, int(temp_df['year'].max()) + 1)
-    counts = temp_df.groupby("year").size().reindex(years, fill_value=0)
-
-    mean, var = counts.mean(), counts.var()
-    k = np.arange(counts.min(), counts.max() + 1)
-    expected = stats.poisson.pmf(k, mean)
-
-    sns.histplot(counts, discrete=True, stat="probability", label=f"Observed ({country_name})")
-    plt.plot(k, expected, "ro-", label=f"Poisson (lambda = {mean:.1f})")
-
-    ratio_text = f"variance/mean = {var / mean:.1f}" if mean > 0 and not np.isnan(var) else "N/A"
-
-    plt.title(f"Events per Year in {country_name} ({min_year}+): {ratio_text}")
-    plt.xlabel("Events in a year")
-    plt.ylabel("Probability")
-    plt.legend()
-    plt.show()
-
-
-# Mannwhitney hypothesis
-def plot_era_mannwhitney(df):
-    plt.figure(figsize=(10, 6))
-
-    df['year'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce').dt.year
-    df = df.dropna(subset=['year'])
-    df['year'] = df['year'].astype(int)
-    df["era"] = np.where(df["year"] < 1990, "Before 1990", "1990 onward")
-    before = df.loc[df["era"] == "Before 1990", "mag"]
-    after = df.loc[df["era"] == "1990 onward", "mag"]
-    stat, p = stats.mannwhitneyu(before, after, alternative="two-sided")
-
-    sns.boxplot(data=df, x="era", y="mag", order=["Before 1990", "1990 onward"])
-    plt.xlabel(f"Median before 1990: {before.median():.2f} (n={len(before)})\n"
-               f"Median 1990 onward: {after.median():.2f} (n={len(after)})")
-
-    plt.title(f"Magnitude by Era (p = {p:.2e}, Mann-Whitney U = {stat:.0f})")
-    plt.show()
-
-
-# kruskal
-def plot_country_kruskal(df):
-    temp_df = df.dropna(subset=['country', 'mag']).copy()
-    groups = [g["mag"].values for _, g in temp_df.groupby("country")]
-    stat, p = stats.kruskal(*groups)
-    summary = temp_df.groupby("country")["mag"].agg(["count", "median"]).round(2)
-    plt.figure(figsize=(12, 6))
-    order = summary.sort_values(by="median", ascending=False).index
-    sns.boxplot(data=temp_df,
-                x="country",
-                y="mag",
-                hue="country",
-                order=order,
-                palette="Set2",
-                legend=False)
-    plt.xticks(rotation=45,
-               ha='right')
-    plt.title(f"Earthquake Magnitude Distribution by Country (Kruskal-Wallis p = {p:.2e}), "
-              f"\n Kruskal-Wallis H = {stat:.2f}", fontsize=12,
-              fontweight='bold')
-    plt.xlabel("Country", fontsize=11)
-    plt.ylabel("Magnitude", fontsize=11)
-
-    plt.tight_layout()
-    plt.show()
-# 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼 Bivariate END 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼
-
-
-
-# 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽 Multivariate START 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽
 # Heatmap
 def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
     temp_df = df.copy()
@@ -445,7 +299,6 @@ def plot_corr_heatmap(df: pd.DataFrame) -> pd.DataFrame:
     plt.show()
 
     return corr_matrix
-
 
 # mean mag by countries for a decades
 def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
@@ -491,7 +344,7 @@ def plot_mean_magnitude_decade_heatmap(df: pd.DataFrame):
     plt.show()
 
 # Quarterly series
-def plot_quarterly_series(df):
+def plot_quarterly_series(df: pd.DataFrame):
     min_year = 1990
     temp_df = df.copy()
 
@@ -518,85 +371,253 @@ def plot_quarterly_series(df):
     plt.tight_layout()
     plt.show()
     return q
-# 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼 Multivariate END 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼
 
 
+# ==============================================================================
+# CATEGORY 4: Statistical Hypothesis Testing & Seismological Modeling
+# Level of Difficulty: Very High | Level of Importance: Critical (Scientific Validation)
+# ==============================================================================
+
+# Shapiro-Wilk test
+def plot_shapiro_test(df: pd.DataFrame, col: str):
+    data = df[col].dropna()
+    stat, p = stats.shapiro(data)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    sns.histplot(data, kde=True, stat="density", ax=ax[0])
+    ax[0].set_title(f"{col} histogram ({stat.round(7)})")
+    stats.probplot(data, dist="norm", plot=ax[1])
+    ax[1].set_title(f"{col} Q-Q plot (Shapiro p = {p:.2e})")
+    plt.tight_layout()
+    plt.show()
+
+# Gutenberg richter
+def plot_gutenberg_richter(df: pd.DataFrame):
+    temp_df = df.copy()
+    mc = 4.0
+    min_year = 1990
+    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
+    temp_df = temp_df.dropna(subset=['year'])
+    temp_df['year'] = temp_df['year'].astype(int)
+
+    plt.figure(figsize=(10, 6))
+
+    d = temp_df[(temp_df['year'] >= min_year) & (temp_df['mag'] >= mc)]
+    mags = np.sort(d['mag'].unique())
+
+    counts = np.array([(d['mag'] >= m).sum() for m in mags])
+
+    slope, intercept = np.polyfit(mags, np.log10(counts), 1)
+
+    sns.scatterplot(x=mags, y=counts, label="Observed")
+
+    plt.plot(mags, 10 ** (intercept + slope * mags), color="red",
+             label=f"Fit: b = {-slope:.2f}")
+
+    plt.yscale("log")
+    plt.xlabel("Magnitude")
+    plt.ylabel("Events with magnitude >= m")
+    plt.title("Gutenberg-Richter Relationship")
+    plt.legend()
+    plt.show()
+
+# Poisson
+def plot_poisson(df: pd.DataFrame):
+    temp_df = df.copy()
+    min_year= 1990
+    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
+    temp_df = temp_df.dropna(subset=['year'])
+    temp_df['year'] = temp_df['year'].astype(int)
 
 
+    """Observed yearly counts vs a Poisson distribution with the same mean."""
+    plt.figure(figsize=(10, 6))
+    years = range(min_year, temp_df["year"].max())
+    counts = temp_df.groupby("year").size().reindex(years, fill_value=0)
+    mean, var = counts.mean(), counts.var()
+    k = np.arange(counts.min(), counts.max() + 1)
+    expected = stats.poisson.pmf(k, mean)
+    sns.histplot(counts, discrete=True, stat="probability", label="Observed")
+    plt.plot(k, expected, "ro-", label=f"Poisson (lambda = {mean:.1f})")
+    plt.title(f"Events per Year: variance/mean = {var / mean:.1f}")
+    plt.xlabel("Events in a year")
+    plt.legend()
+    plt.show()
+
+# poisson by country
+def plot_poisson_by_country(df: pd.DataFrame):
+    country_name = "Uzbekistan"
+    min_year = 1990
+    temp_df = df.copy()
+    temp_df = temp_df[temp_df['country'].str.lower() == country_name.lower()]
+
+    temp_df['year'] = pd.to_datetime(temp_df['date'], format='%Y-%m-%d', errors='coerce').dt.year
+    temp_df = temp_df.dropna(subset=['year'])
+    temp_df['year'] = temp_df['year'].astype(int)
+
+    plt.figure(figsize=(10, 6))
+    years = range(min_year, int(temp_df['year'].max()) + 1)
+    counts = temp_df.groupby("year").size().reindex(years, fill_value=0)
+
+    mean, var = counts.mean(), counts.var()
+    k = np.arange(counts.min(), counts.max() + 1)
+    expected = stats.poisson.pmf(k, mean)
+
+    sns.histplot(counts, discrete=True, stat="probability", label=f"Observed ({country_name})")
+    plt.plot(k, expected, "ro-", label=f"Poisson (lambda = {mean:.1f})")
+
+    ratio_text = f"variance/mean = {var / mean:.1f}" if mean > 0 and not np.isnan(var) else "N/A"
+
+    plt.title(f"Events per Year in {country_name} ({min_year}+): {ratio_text}")
+    plt.xlabel("Events in a year")
+    plt.ylabel("Probability")
+    plt.legend()
+    plt.show()
+
+# Mannwhitney hypothesis
+def plot_era_mannwhitney(df: pd.DataFrame):
+    plt.figure(figsize=(10, 6))
+
+    df['year'] = pd.to_datetime(df['date'], format='%Y-%m-%d', errors='coerce').dt.year
+    df = df.dropna(subset=['year'])
+    df['year'] = df['year'].astype(int)
+    df["era"] = np.where(df["year"] < 1990, "Before 1990", "1990 onward")
+    before = df.loc[df["era"] == "Before 1990", "mag"]
+    after = df.loc[df["era"] == "1990 onward", "mag"]
+    stat, p = stats.mannwhitneyu(before, after, alternative="two-sided")
+
+    sns.boxplot(data=df, x="era", y="mag", order=["Before 1990", "1990 onward"])
+    plt.xlabel(f"Median before 1990: {before.median():.2f} (n={len(before)})\n"
+               f"Median 1990 onward: {after.median():.2f} (n={len(after)})")
+
+    plt.title(f"Magnitude by Era (p = {p:.2e}, Mann-Whitney U = {stat:.0f})")
+    plt.show()
+
+# kruskal
+def plot_country_kruskal(df: pd.DataFrame):
+    temp_df = df.dropna(subset=['country', 'mag']).copy()
+    groups = [g["mag"].values for _, g in temp_df.groupby("country")]
+    stat, p = stats.kruskal(*groups)
+    summary = temp_df.groupby("country")["mag"].agg(["count", "median"]).round(2)
+    plt.figure(figsize=(12, 6))
+    order = summary.sort_values(by="median", ascending=False).index
+    sns.boxplot(data=temp_df,
+                x="country",
+                y="mag",
+                hue="country",
+                order=order,
+                palette="Set2",
+                legend=False)
+    plt.xticks(rotation=45,
+               ha='right')
+    plt.title(f"Earthquake Magnitude Distribution by Country (Kruskal-Wallis p = {p:.2e}), "
+              f"\n Kruskal-Wallis H = {stat:.2f}", fontsize=12,
+              fontweight='bold')
+    plt.xlabel("Country", fontsize=11)
+    plt.ylabel("Magnitude", fontsize=11)
+
+    plt.tight_layout()
+    plt.show()
 
 
-
-# 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽 TESTING START 🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽
-
-# 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼 TESTING END 🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# ==============================================================================
+# MAIN EXECUTION & REPORT METADATA
+# ==============================================================================
 if __name__ == "__main__":
-    print(f"=====Function 1=====\n"
-          f"plot_magnitude_distribution: "
-          f"This function will show the distribution of variable mag, which \n"
-          f"helps visually inspect whether it matches expected seismological curves.\n"
-          
-          f"\n=====Function 2=====\n"
-          f"plot_corr_heatmap: "
-          f"This function will show the correlation heatmap of variable mag, which \n"
-          f"will calculate the correlation coefficients between mag and all other \n"
-          f"numerical columns (like depth, network parameters, and error metrics) \n"
-          f"to see what linear relationships exist.\n"
-    
-          f"\n=====Function 3=====\n"
-          f"plot_mag_by_country: "
-          f"The full statistical distribution for each country, including the median \n"
-          f"(middle line), the interquartile range (the box), and any extreme outliers \n"
-          f"(dots outside the whiskers).\n"
+    print(
+        "======================================================================\n"
+        "        SEISMIC DATA ANALYSIS & VISUALIZATION REPORT GENERATOR        \n"
+        "======================================================================\n\n"
 
-          f"\n=====Function 4=====\n"
-          f"plot_desc_table: "
-          f"Computes a comprehensive descriptive statistics table for numeric columns, \n"
-          f"displays a straightforward visualization of missing % and skewness, \n"
-          f"and returns the DataFrame.\n"
+        "===== Function 1: plot_magnitude_distribution =====\n"
+        "Description : Univariate analysis examining the distribution of earthquake magnitudes.\n"
+        "Objective   : Visually inspect whether the empirical magnitude data aligns with expected theoretical seismological probability curves.\n"
+        "Graph Explanation: The histogram combined with the Kernel Density Estimate (KDE) curve illustrates data skewness, concentration peaks, and frequency scaling across earthquake sizes.\n\n"
 
+        "===== Function 2: plot_depth_distribution =====\n"
+        "Description : Categorical univariate breakdown mapping earthquake counts across standardized depth classes.\n"
+        "Objective   : Identify the dominant geological depth strata (ranging from very shallow to deep intermediate zones) within the region.\n"
+        "Graph Explanation: The count plot displays discrete frequency values alongside sample counts (n) for each classification tier, emphasizing structural depth concentration.\n\n"
 
-          f"\n=====Function 5=====\n"
-          f"plot_pearson_spearman: "
-          f"A strong positive correlation exists between earthquake magnitude and the, \n"
-          f"number of reporting stations (Pearson r=0.72, Spearman ρ=0.75, n=409), \n"
-          f"demonstrating that larger seismic events are successfully detected by \n"
-          f"broader monitoring networks.\n"
+        "===== Function 3: plot_events_per_year =====\n"
+        "Description : Temporal trend analysis tracking annual seismic event counts across a multi-decadal timeline.\n"
+        "Objective   : Detect historical variations in reporting completeness, observation consistency, and activity spikes over time.\n"
+        "Graph Explanation: The annual bar chart maps event totals per calendar year, explicitly filling missing gaps with zeros to maintain temporal integrity.\n\n"
 
+        "===== Function 4: plot_desc_table =====\n"
+        "Description : Comprehensive statistical summary profiling all numerical variables in the dataset.\n"
+        "Objective   : Establish foundational data hygiene metrics, including measures of central tendency, dispersion, missingness percentages, and distribution shape.\n"
+        "Graph Explanation: Side-by-side bar plots quantify missing value ratios per feature alongside distribution skewness values, highlighting features requiring transformation.\n\n"
 
-          f"\n=====Function 6=====\n"
-          f"plot_gutenberg_richter: "
-          f"The Gutenberg-Richter frequency-magnitude distribution demonstrates a strong \n "
-          f"inverse power-law relationship, yielding ab-value of 1.41. This indicates a rapid \n"
-          f"decrease in event frequency as magnitude increases, confirming that smaller magnitude \n"
-          f"events dominate the catalog.\n"
+        "===== Function 5: plot_missing_percent =====\n"
+        "Description : Data quality audit quantifying missing data ratios per column.\n"
+        "Objective   : Isolate columns susceptible to high data loss to guide subsequent imputation, deletion, or filtering decisions.\n"
+        "Graph Explanation: The descending horizontal/vertical bar graph visualizes the exact percentage of missing entries for incomplete attributes.\n\n"
 
+        "===== Function 6: plot_depth_hist =====\n"
+        "Description : Continuous numerical inspection of hypocentral depth values.\n"
+        "Objective   : Analyze the fine-grained distribution profile of earthquake focal depths measured in kilometers.\n"
+        "Graph Explanation: A high-resolution histogram categorizes exact continuous depth values into equal bins to uncover geological clustering.\n\n"
 
-          f"\n=====Function 7=====\n"
-          f"plot_poisson: "
-          f"The yearly earthquake frequency deviates slightly from a pure Poisson model, \n"
-          f"showing mild overdispersion with a variance-to-mean ratio of 1.8. This reflects \n "
-          f"real-world seismic clustering, where major events trigger aftershock sequences \n"
-          f"within the same annual timeframe.\n")
+        "===== Function 7: plot_mag_by_country =====\n"
+        "Description : Regional bivariate comparison of earthquake magnitude distributions segmented by country.\n"
+        "Objective   : Evaluate whether specific geographical territories experience systematically higher median magnitudes or varying dispersion.\n"
+        "Graph Explanation: Boxplots display country-specific medians, interquartile ranges (IQRs), and outlier magnitudes, annotated with sample sizes (n).\n\n"
 
+        "===== Function 8: plot_earthquake_map =====\n"
+        "Description : Global spatial mapping of earthquake epicenter coordinates.\n"
+        "Objective   : Visualize the geographical positioning of seismic events against latitude and longitude grids.\n"
+        "Graph Explanation: A scatter plot maps global coordinates where point sizes and color gradients scale directly with earthquake magnitude to highlight active tectonic plate margins.\n\n"
 
+        "===== Function 9: plot_pearson_spearman =====\n"
+        "Description : Bivariate relationship analysis between earthquake magnitude and network recording capability.\n"
+        "Objective   : Test the correlation between event magnitude and the number of reporting seismic stations (nst).\n"
+        "Graph Explanation: The scatter plot pairs magnitude against reporting station counts, proving that larger events trigger wider station networks with strong positive linear and monotonic association metrics (Pearson r=0.72, Spearman ρ=0.75).\n\n"
 
+        "===== Function 10: plot_corr_heatmap =====\n"
+        "Description : Multivariate correlation matrix assessing multicollinearity across all primary numerical attributes.\n"
+        "Objective   : Identify linear and monotonic associations between the target variable (mag) and network or error parameters.\n"
+        "Graph Explanation: A lower-triangular correlation heatmap maps coefficient values from -1 to 1 using a diverging coolwarm color palette to flag highly collinear features.\n\n"
 
+        "===== Function 11: plot_mean_magnitude_decade_heatmap =====\n"
+        "Description : Socio-temporal multivariate matrix evaluating regional mean magnitudes over successive decades.\n"
+        "Objective   : Track long-term shifts in average earthquake intensities across the top seismically active countries.\n"
+        "Graph Explanation: A grid-based heatmap displays intersected mean magnitudes categorized by country rows and decade columns, highlighting historical intensity trends.\n\n"
 
+        "===== Function 12: plot_quarterly_series =====\n"
+        "Description : High-resolution quarterly time-series tracking of seismic frequency.\n"
+        "Objective   : Smooth out short-term fluctuations to reveal medium-term rate changes and seasonal patterns in seismicity.\n"
+        "Graph Explanation: Line plots trace raw quarterly event counts alongside a smoothed 4-quarter rolling average trendline over time.\n\n"
 
+        "===== Function 13: plot_shapiro_test =====\n"
+        "Description : Statistical hypothesis test assessing the normality of numerical feature distributions.\n"
+        "Objective   : Formally test whether target variables follow a Gaussian distribution to determine the applicability of parametric vs. non-parametric models.\n"
+        "Graph Explanation: Dual-panel layout combining a fitted density histogram and a Quantile-Quantile (Q-Q) plot, annotated with Shapiro-Wilk test statistic and p-value.\n\n"
+
+        "===== Function 14: plot_gutenberg_richter =====\n"
+        "Description : Seismological power-law modeling implementing the Gutenberg-Richter frequency-magnitude relationship.\n"
+        "Objective   : Quantify the relative proportion of small versus large earthquakes to derive the characteristic regional b-value.\n"
+        "Graph Explanation: A log-scale scatter plot fits a linear regression line to cumulative magnitude counts, yielding an estimated b-value of 1.41 that confirms the dominance of micro-seismic events.\n\n"
+
+        "===== Function 15: plot_poisson =====\n"
+        "Description : Goodness-of-fit test comparing annual earthquake frequency against a theoretical Poisson process.\n"
+        "Objective   : Evaluate whether annual event occurrences follow a memoryless random process or exhibit real-world clustering.\n"
+        "Graph Explanation: Compares observed yearly count probabilities against a Poisson probability mass function (lambda), highlighting mild overdispersion (variance-to-mean ratio of 1.8) driven by aftershock sequences.\n\n"
+
+        "===== Function 16: plot_poisson_by_country =====\n"
+        "Description : Localized Poisson process evaluation targeting specific regional fault zones (e.g., Uzbekistan).\n"
+        "Objective   : Test annual event stationarity and clustering behavior at a national administrative scale.\n"
+        "Graph Explanation: Overlays observed annual frequency distributions against a theoretical Poisson curve, displaying local variance-to-mean dispersion metrics.\n\n"
+
+        "===== Function 17: plot_era_mannwhitney =====\n"
+        "Description : Non-parametric hypothesis testing comparing magnitude distributions across historical epochs (Pre-1990 vs. 1990 Onward).\n"
+        "Objective   : Detect potential shifts or systematic biases in magnitude recording standards following modern digital instrumentation upgrades.\n"
+        "Graph Explanation: Comparative boxplots display median shifts between eras, supported by Mann-Whitney U test statistics and exact sample sizes.\n\n"
+
+        "===== Function 18: plot_country_kruskal =====\n"
+        "Description : Multi-group non-parametric variance test evaluating magnitude differences across all recorded countries.\n"
+        "Objective   : Determine whether observed differences in median earthquake magnitudes between national borders are statistically significant.\n"
+        "Graph Explanation: Ranked boxplots ordered by median magnitude illustrate cross-country variations, backed by Kruskal-Wallis H-statistic and p-values."
+    )
 
 
 
